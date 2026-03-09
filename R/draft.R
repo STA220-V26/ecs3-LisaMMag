@@ -70,3 +70,8 @@ col_vals_expr(
   interrogate()
 
 checks
+
+
+export_report(checks, "patient_validation.html")
+
+
