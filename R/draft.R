@@ -55,7 +55,7 @@ checks <-
   ) |>
 col_vals_in_set(
     marital, 
-    set = c("W", "M", "S"),
+    set = c("W", "M", "S", "D"),
     #na_pass = TRUE,
     label = "Check that marital status only has one letter (W, M, or S)"
   ) |>
@@ -71,7 +71,61 @@ col_vals_expr(
 
 checks
 
-
 export_report(checks, "patient_validation.html")
 
+#-----------------------------------------------------------------------------------------------------------------------------
 
+#checking marital status types
+patients[, .N, marital] #We have W, M, S, D
+
+#changing them to labels we think are better
+patients[,
+  marital := factor(
+    marital,
+    levels = c("S", "M", "D", "W"),
+    labels = c("Single", "Married", "Divorced", "Widowed")
+  )
+]
+
+#changing labels on other code
+fctr_candidates <-
+  patients[, which(lapply(.SD, uniqueN) < 10), .SDcols = is.character] |>
+  names()
+#the columns in SD where there are less than 10 different options and they are caracters are collected into this variable
+
+patients[,
+  lapply(.SD, \(x) paste(unique(x), collapse = ", ")),
+  .SDcols = fctr_candidates
+] |>
+  glimpse()
+#it prints the columns which should be factors are printed alongside their categories
+#Rows: 1
+#Columns: 6
+#$ prefix    <chr> "Mr., NA, Mrs., Ms."
+#$ suffix    <chr> "NA, JD, MD, PhD"
+#$ race      <chr> "white, black, native, asian, hawaiian, other"
+#$ ethnicity <chr> "nonhispanic, hispanic"
+#$ gender    <chr> "M, F"
+#$ state     <chr> "Massachusetts, Alaska, Alabama, Arizona, Arkansas, California"
+
+#The only one I think needs changing the names of is gender, so
+#changing them to labels we think are better
+patients[,
+  gender := factor(
+    gender,
+    levels = c("M", "F"),
+    labels = c("Male", "Female")
+  ),
+  prefix := factor(prefix)
+]
+
+#convert to factor when labels are already good
+patients[,
+  (c("prefix", "suffix", "race", "ethnicity", "state")) := lapply(.SD, as.factor), #SD makes it work, as := requires a data table
+  .SDcols = c("prefix", "suffix", "race", "ethnicity", "state")
+]
+
+#now rerunning the earlier code returns 0 suggestions to convert to factors
+
+
+#-----------------------------------------------------------------------------------------------------------------------------
